@@ -1,0 +1,28 @@
+	ufo::drv::can_drv_t cand;
+			cand.init(static_cast<gpio_num_t>(4), static_cast<gpio_num_t>(5));
+			
+			ufo::dev::fp fpp(&cand);
+			fpp.init(0x10, 0x17, 0x71, 0x13, 0x41, 0x6, 5);
+			// fpp.cmdLimit(10.f,45.f);
+			// fpp.cmdDefaultVolt(50.f);
+			uint32_t timr = utl::get_time_millis();
+			while (true)
+			{
+
+				// // fpp.update();
+				// fpp.cmdLimit(10.f,45.f);
+				fpp.update();
+				if (utl::get_time_millis() - timr > 5000)
+				{
+					timr = utl::get_time_millis();
+				}
+				
+
+				// fpp.cmdLimit(10.f,50.f);
+				
+				// fpp.cmdLogin();
+				// fpp.full_msg_log();
+				
+				ufo::utl::sleep_for(500);
+			}
+			
