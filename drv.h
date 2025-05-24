@@ -7,8 +7,7 @@
 #include "uart/UFO_Uart.h"
 #include "bits/unique_ptr.h"
 
-#define UFO_SPI_CNT 1
-#define UFO_UART_CNT 2
+
 
 
 namespace ufo
@@ -42,8 +41,8 @@ namespace ufo
             static constexpr uint32_t uart0_br = 115200;
             
             #if (UFO_UART_CNT > 1)
-            static constexpr gpio_num_t uart1_rx = gpio_num_t::GPIO_NUM_0;
-            static constexpr gpio_num_t uart1_tx = gpio_num_t::GPIO_NUM_0;
+            static constexpr gpio_num_t uart1_rx = gpio_num_t::GPIO_NUM_16;
+            static constexpr gpio_num_t uart1_tx = gpio_num_t::GPIO_NUM_17;
             static constexpr uint32_t uart1_br = 9600;
 #endif
 #if (UFO_UART_CNT > 2)

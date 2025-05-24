@@ -137,9 +137,6 @@ namespace ufo
                 ret = i2c_driver_install(static_cast<i2c_port_t>(_port), conf.mode, 0, 0, 0);
                 if (ret != ESP_OK)
                 {
-                    // CriticalError_t e;
-                    // e._info = GenerateInfo_Code(error::codes_t::i2c_conf_fail, "installing failed");
-                    // _error.Push(e);
                     _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_conf_fail, "installing failed")));
                     _dstatus = dev_status_t::off;
                     return ret;
@@ -147,9 +144,6 @@ namespace ufo
                 ret = i2c_set_timeout(static_cast<i2c_port_t>(_port), UFO_I2C_TIMEOUT);
                 if (ret != ESP_OK)
                 {
-                    // CriticalError_t e;
-                    // e._info = GenerateInfo_Code(error::codes_t::i2c_tcfg_fail, "timeout-config failed");
-                    // _error.Push(e);
                     _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_tcfg_fail, "timeout-config failed")));
                     _dstatus = dev_status_t::off;
                     return ret;
@@ -174,9 +168,6 @@ namespace ufo
                 ret = __Write(addr, buf, size);
                 if (ret != ESP_OK)
                 {
-                    // Warning_t w;
-                    // w._info = GenerateInfo_Code(error::codes_t::i2c_write, "write problem");
-                    // _error.Push(w);
                     _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_write, "write problem")));
                     _dstatus = dev_status_t::warning;
                 }
@@ -204,27 +195,27 @@ namespace ufo
                 return ret;
             }
 
-            // // not used
-            // esp_err_t Read(uint16_t address, uint8_t *buff, size_t size)
-            // {
-            //     lock_guard<mutex_t>_l(_lock);
+            // not used
+            esp_err_t Read(uint8_t address, uint8_t *buff, size_t size)
+            {
+                lock_guard<mutex_t>_l(_lock);
 
-            //     esp_err_t ret = ESP_FAIL;
-            //     if (__CheckInitOrThrow() != ESP_OK)
-            //     {
-            //         return ret;
-            //     }
+                esp_err_t ret = ESP_FAIL;
+                if (__CheckInitOrThrow() != ESP_OK)
+                {
+                    return ret;
+                }
 
-            //     ret = i2c_master_read_from_device(static_cast<i2c_port_t>(_port), address, buff, size, _timeOutMillis / portTICK_PERIOD_MS);
-            //     if (ret != ESP_OK)
-            //     {
-            //     // todo::
-            //         // Warning_t w = GenerateInfo_Code(error::codes_t::i2c_read, "read problem");
-            //         // _error.Push(w);
-            //     }
+                ret = i2c_master_read_from_device(static_cast<i2c_port_t>(_port), address, buff, size, _timeOutMillis / portTICK_PERIOD_MS);
+                if (ret != ESP_OK)
+                {
+                // todo::
+                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_write_read, "read problem")));
+                    _dstatus = dev_status_t::warning;
+                }
 
-            //     return ret;
-            // }
+                return ret;
+            }
 
             // write address, reg(cmd) => get value
             esp_err_t WriteRead(uint8_t address, uint8_t *wbuff, size_t wsize, uint8_t *rbuff, size_t rsize)
