@@ -77,7 +77,7 @@ namespace ufo
         {
             uint8_t buf[2] = {};
             _driver->Read(_addr, buf, 2);
-            return uint16_t(buf[0]) | uint16_t(buf[1])<< 8;
+            return uint16_t(buf[0]) | uint16_t(buf[1]) << 8;
         }
 
         uint8_t Read8(uint8_t reg)
@@ -110,8 +110,8 @@ namespace ufo
 
         esp_err_t Write16_noreg(uint16_t val){
             uint8_t buf[2] = {};
-            buf[0] = (val >> 8) & 255;
-            buf[1] = (val & 0xFF);
+            buf[0] = (val & 0xFF);
+            buf[1] = (val >> 8) & 255;
             return _driver->Write(_addr, buf, 2);
         }
 

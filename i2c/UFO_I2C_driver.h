@@ -205,7 +205,6 @@ namespace ufo
                 {
                     return ret;
                 }
-
                 ret = i2c_master_read_from_device(static_cast<i2c_port_t>(_port), address, buff, size, _timeOutMillis / portTICK_PERIOD_MS);
                 if (ret != ESP_OK)
                 {
