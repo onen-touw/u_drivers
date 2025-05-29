@@ -7,8 +7,7 @@
 #include "uart/UFO_Uart.h"
 #include "bits/unique_ptr.h"
 
-#define UFO_SPI_CNT 1
-#define UFO_UART_CNT 2
+
 
 
 namespace ufo
