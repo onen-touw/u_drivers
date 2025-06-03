@@ -1,25 +1,13 @@
 #pragma once
 
-#include "u_sys/config.h"
-#include "u_sys/error.h"
-#include "u_sys/mutex.h"
-
-// idf-include
-#include <driver/ledc.h>
-
-
-#define UFO_PWM_TIMER_MODE          LEDC_HIGH_SPEED_MODE
-// #define UFO_PWM_TIMER_GROUP         ((uint8_t)1)
-#define UFO_PWM_TIMER_PER_OUT       ((uint8_t)2)
-#define UFO_CLK                     LEDC_AUTO_CLK
+#include "pwmbs.h"
 
 namespace ufo
 {
     namespace drv
     {
-
         // thread-unsavely
-        class UFO_ESC_driver
+        class UFO_ESC_driver : public pwmbs_t
         {
         public:
             static constexpr uint8_t resolution = 16;
@@ -29,17 +17,11 @@ namespace ufo
             static constexpr uint16_t esc_max_out = pwm_max_out / 10;               // 2^16/10;
             static constexpr uint16_t esc_min_out = esc_max_out/2;                  // 2^16/10/2;
 
-        private:
-            ledc_timer_t _timer = LEDC_TIMER_MAX;
-            ledc_channel_t _channel = LEDC_CHANNEL_MAX;
-            uint8_t _pin = 255;
-            uint16_t _duty = 0;
-
         public:
-            UFO_ESC_driver(/* args */) {}
+            UFO_ESC_driver() {}
             ~UFO_ESC_driver() {}
 
-            void Setup(uint8_t escID, uint8_t pin)
+            void setup(uint8_t escID, uint8_t pin)
             {
                 _timer = static_cast<ledc_timer_t>(escID % UFO_PWM_TIMER_PER_OUT);
                 _channel = static_cast<ledc_channel_t>(escID);
@@ -62,8 +44,6 @@ namespace ufo
                     return;
                 }
                 
-                Trace_t::flog("ESC_DRIVER_SETUP: \n", _pin);
-
                 ledc_timer_config_t timerCfg ={};
                 timerCfg.speed_mode = UFO_PWM_TIMER_MODE;
                 timerCfg.duty_resolution = static_cast<ledc_timer_bit_t>(resolution);
@@ -74,14 +54,11 @@ namespace ufo
                 if (ledc_timer_config(&timerCfg) != ESP_OK)
                 {
                     ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    // CriticalError_t e;
-                    // e._info = GenerateInfo_Code(error::codes_t::pwm_ledc_timer, "ledc_timer config");
-                    // _error.Push(e);
                     _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::pwm_ledc_timer, "ledc_timer config")));
                     return;
                 }
 
-                _duty = ledc_get_duty(UFO_PWM_TIMER_MODE, static_cast<ledc_channel_t>(_channel));
+                // _duty = ledc_get_duty(UFO_PWM_TIMER_MODE, static_cast<ledc_channel_t>(_channel));
                 ledc_channel_config_t chanCfg = {};
                 chanCfg.gpio_num = _pin;
                 chanCfg.speed_mode = UFO_PWM_TIMER_MODE;
@@ -94,15 +71,12 @@ namespace ufo
                 if (ledc_channel_config(&chanCfg) != ESP_OK)
                 {
                     ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    // CriticalError_t e;
-                    // e._info = GenerateInfo_Code(error::codes_t::pwm_ledc_cfg, "ledc_channel config");
-                    // _error.Push(e);
                     _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::pwm_ledc_cfg, "ledc_channel config")));
                     return;
                 }
             }
 
-            void Write(uint16_t val)
+            void write(uint16_t val)
             {
                 if (_duty == val)
                 {
@@ -119,7 +93,7 @@ namespace ufo
                 }
             }
 
-            uint16_t GetDuty() const
+            uint16_t get_duty() const
             {
                 return _duty;
             }
