@@ -60,7 +60,7 @@ namespace ufo
                 chanCfg.duty = _duty;
                 chanCfg.hpoint = 0;
                 
-                _duty = 0x1FF;
+                _duty = 0x1ff;
 
                 if (ledc_channel_config(&chanCfg) != ESP_OK)
                 {

@@ -34,28 +34,10 @@ namespace ufo
                 {
                     deinit();
                 }
-                
             }
 
             can_drv_t(can_drv_t&) = delete;
             can_drv_t& operator=(can_drv_t&) = delete;
-
-            can_drv_t(can_drv_t&& other) : _state (other._state), _lock(std::move(other._lock))
-            {
-                other._state =  state_t::und;
-            }
-
-            can_drv_t& operator=(can_drv_t&& other) {
-                if (&other != this)
-                {
-                    _state = other._state;
-                    other._state = state_t::und;
-                    _lock = std::move(other._lock);
-                }
-                return *this;
-            }
-
-            // twai_get_status_info();
 
             bool check_state() const {
                 return _state == state_t::run;
@@ -164,7 +146,7 @@ namespace ufo
             //     return _rcv.data;
             // }
 
-            can_msg_t& read(uint32_t ttw = 200){
+            can_msg_t& read(){
                 ufo::lock_guard<mutex_t> _l(_lock);
                 esp_err_t err = ESP_OK;
                 // twai_status_info_t info;
@@ -174,7 +156,9 @@ namespace ufo
                 //     _rcv.data_length_code = 0;
                 //     return _rcv;
                 // }
-                err = twai_receive(&_rcv, ttw);
+
+                // 10 is time to wait in internal queue (it also can be 0). When it set to no-0 its work like delay in read function
+                err = twai_receive(&_rcv, 10);
                 if (err != ESP_OK)
                 {
                     // printf("twai_receive err\n\t");
@@ -192,7 +176,7 @@ namespace ufo
                     // default:
                     //     break;
                     // }
-                    _rcv.data_length_code = 0;
+                    _rcv.data_length_code = 0;  // indecates about error
                     return _rcv;
                 }
                 return _rcv;
@@ -200,7 +184,6 @@ namespace ufo
 
             bool recover()
             {
-
                 twai_status_info_t info;
 
                 if (twai_get_status_info(&info) != ESP_OK)
