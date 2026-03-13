@@ -144,6 +144,7 @@ namespace ufo
             return ip_t(a4, a3, a2, a1);
         }
 
+        
         class wfbs_t
         {
         public:
@@ -151,6 +152,12 @@ namespace ufo
             static constexpr uint32_t bit_sta_end = 1;
             static constexpr uint32_t bit_sta_start = 1 << 1;
             static constexpr uint32_t bit_ap_start = 1 << 2;
+
+            struct ip_cfg_t {
+                ip_t _ip;
+                ip_t _gate;
+                ip_t _mask;
+            };
 
             enum class flag_pos_t
             {
@@ -246,8 +253,7 @@ namespace ufo
                 if (e != ESP_OK)
                 {
                     // printf("!esp_wifi_start\n");
-                    ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return false;
                 }
                 _flags.set(flag_pos_t::driver_started);
@@ -289,15 +295,13 @@ namespace ufo
             {
                 esp_err_t err = ESP_OK;
 
-                ufo::Error_t &_error = ufo::Error_t::GetInstance();
-
                 if (!_flags.get(flag_pos_t::driver_inited))
                 {
                     _event_bit = xEventGroupCreate();
                     if (!_event_bit)
                     {
                         // log_e("Network Event Group Create Failed!");
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                         return false;
                     }
 
@@ -307,7 +311,7 @@ namespace ufo
                     if (err != ESP_OK)
                     {
                         // log_e("esp_netif_init failed!");
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                         return false;
                     }
 
@@ -315,7 +319,7 @@ namespace ufo
                     if (err != ESP_OK && err != ESP_ERR_INVALID_STATE)
                     {
                         // log_e("esp_event_loop_create_default failed!");
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                         return false;
                     }
 
@@ -335,7 +339,7 @@ namespace ufo
                     if (err)
                     {
                         // log_e("esp_wifi_init %d", err);
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                         return false;
                     }
 
@@ -344,7 +348,7 @@ namespace ufo
                         err = esp_wifi_set_storage(WIFI_STORAGE_RAM);
                         if (err != ESP_OK)
                         {
-                            _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                            __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                             return false;
                         }
                     }
@@ -355,7 +359,7 @@ namespace ufo
                         _netifs[ESP_IF_WIFI_AP] = esp_netif_create_default_wifi_ap();
                         if (!_netifs[ESP_IF_WIFI_AP])
                         {
-                            _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                            __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                             // warning
                         }
                     }
@@ -364,7 +368,7 @@ namespace ufo
                         _netifs[ESP_IF_WIFI_STA] = esp_netif_create_default_wifi_sta();
                         if (!_netifs[ESP_IF_WIFI_AP])
                         {
-                            _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                            __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                             // warning
                         }
                     }
@@ -393,8 +397,7 @@ namespace ufo
                     esp_err_t e = esp_wifi_deinit();
                     if (e != ESP_OK)
                     {
-                        ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                        _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                        __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                         // critical
                     }
                     esp_event_loop_delete_default();
@@ -418,8 +421,7 @@ namespace ufo
                 if (esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, callback, arg, nullptr))
                 {
                     // log_e("event_handler_instance_register for WIFI_EVENT Failed!");
-                    ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return false;
                 }
                 _flags.set(flag_pos_t::main_event_inited);
@@ -434,8 +436,7 @@ namespace ufo
                 if (esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, callback))
                 {
                     // log_e("esp_event_handler_unregister for WIFI_EVENT Failed!");
-                    ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return false;
                 }
                 _flags.unset(flag_pos_t::main_event_inited);
@@ -450,8 +451,7 @@ namespace ufo
                 }
                 if (esp_event_handler_instance_register(IP_EVENT, ESP_EVENT_ANY_ID, callback, arg, nullptr))
                 {
-                    ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     // log_e("event_handler_instance_register for IP_EVENT Failed!");
                     return false;
                 }
@@ -467,8 +467,7 @@ namespace ufo
                 if (esp_event_handler_unregister(IP_EVENT, ESP_EVENT_ANY_ID, callback))
                 {
                     // log_e("esp_event_handler_unregister for WIFI_EVENT Failed!");
-                    ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return false;
                 }
                 _flags.unset(flag_pos_t::nett_event_inited);
@@ -477,6 +476,27 @@ namespace ufo
 
             
         protected:
+
+            ip_cfg_t _get_ip_config(esp_interface_t itf) const {
+
+                ip_cfg_t cfg = {};
+                
+                if (!_netifs[itf])
+                {
+                    return cfg;
+                }
+                esp_netif_ip_info_t ip;
+                if (esp_netif_get_ip_info(_netifs[itf], &ip) != ESP_OK)
+                {
+                    // printf("Netif Get IP Failed!\n");
+                    return cfg;
+                }
+                cfg._ip = ip.ip.addr;
+                cfg._mask = ip.netmask.addr;
+                cfg._gate = ip.gw.addr;
+                return cfg;
+            };
+
             ip_t _get_ip(esp_interface_t itf) const
             {
                 if (!_netifs[itf])
@@ -597,17 +617,22 @@ namespace ufo
                     Trace_t::log("\terror\n");
                     return;
                 }
-                Trace_t::log("ip:\n");
+                Trace_t::log("*ip: ");
                 ip_t(ip.ip.addr).log();
-                Trace_t::log("mask:\n");
+
+                Trace_t::log("\n*mask: ");
                 ip_t(ip.netmask.addr).log();
-                Trace_t::flog("CIDR: %u\n", calc_subnet_CIDR(ip.netmask.addr));
-                Trace_t::log("gw:\n");
+                Trace_t::flog(" (%u)\n", calc_subnet_CIDR(ip.netmask.addr));
+                
+                Trace_t::log("*gw: ");
                 ip_t(ip.gw.addr).log();
-                Trace_t::log("broadcast:\n");
+
+                Trace_t::log("\n*broadcast: ");
                 calc_broadcastID(ip.ip.addr, ip.netmask.addr).log();
-                Trace_t::log("network:\n");
+
+                Trace_t::log("\n*network: ");
                 calc_networkID(ip.ip.addr, ip.netmask.addr).log();
+                Trace_t::log("\n");
             }
 
             bool _ip_config(esp_interface_t itf,
@@ -649,7 +674,6 @@ namespace ufo
                     d2.ip.u_addr.ip4.addr = 0;
                     d3.ip.u_addr.ip4.addr = 0;
                 }
-                ufo::Error_t &_error = ufo::Error_t::GetInstance();
     
                 esp_netif_flags_t flags = esp_netif_get_flags(_netifs[itf]);
                 if (flags & ESP_NETIF_DHCP_SERVER)
@@ -660,7 +684,7 @@ namespace ufo
                         err = esp_netif_set_dns_info(_netifs[itf], ESP_NETIF_DNS_MAIN, &d2);
                         if (err)
                         {
-                            _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "dns")));
+                            __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "dns")));
                             // log_e("Netif Set DNS Info Failed! 0x%04x: %s", err, esp_err_to_name(err));
                             return false;
                         }
@@ -670,7 +694,7 @@ namespace ufo
                     err = esp_netif_dhcps_stop(_netifs[itf]);
                     if (err && err != ESP_ERR_ESP_NETIF_DHCP_ALREADY_STOPPED)
                     {
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "dhcp")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "dhcp")));
                             // log_e("DHCPS Stop Failed! 0x%04x: %s", err, esp_err_to_name(err));
                         return false;
                     }
@@ -679,7 +703,7 @@ namespace ufo
                     err = esp_netif_set_ip_info(_netifs[itf], &info);
                     if (err)
                     {
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "ip")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "ip")));
                             // printf("Netif Set IP Failed! 0x%04x: %s\n", err, esp_err_to_name(err));
                         return false;
                     }
@@ -701,7 +725,7 @@ namespace ufo
                     // IDF NETIF checks netmask for the 3rd byte: https://github.com/espressif/esp-idf/blob/master/components/esp_netif/lwip/esp_netif_lwip.c#L1857-L1862
                     if (CIDR > 28 || CIDR < 24)
                     {
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "badmask")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "badmask")));
 
                         // printf("Bad netmask. It must be from /24 to /28 (255.255.255. 0<->240)\n");
                         return false; //  ESP_FAIL if initializing failed
@@ -719,7 +743,7 @@ namespace ufo
                     if ((ap_ipaddr & netmask) != (dhcp_ipaddr & netmask))
                     {
                         ip_t dd(_byte_swap32(dhcp_ipaddr));
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "bad subnet")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "bad subnet")));
                         // printf("The AP IP address and the DHCP start address must be in the same subnet:: ");
                         // local_ip.log();
                         // dd.log();
@@ -731,7 +755,7 @@ namespace ufo
                         // make first DHCP lease addr stay in the beginning of the netmask range
                         lease.start_ip.addr = (dhcp_ipaddr & netmask) + 1;
                         lease.end_ip.addr = lease.start_ip.addr + 10;
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "bad subnet")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "bad subnet")));
                         // printf("DHCP Lease out of range\n");
                         // log_w("DHCP Lease out of range - Changing DHCP leasing start to %s", IPAddress(_byte_swap32(lease.start_ip.addr)).toString().c_str());
                     }
@@ -741,7 +765,7 @@ namespace ufo
                         // log_e(
                         //     "The AP IP address (%s) can't be within the DHCP range (%s -- %s)", local_ip.toString().c_str(),
                         //     IPAddress(_byte_swap32(lease.start_ip.addr)).toString().c_str(), IPAddress(_byte_swap32(lease.end_ip.addr)).toString().c_str());
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "bad subnet")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "bad subnet")));
                         // printf("The AP IP address can't be within the DHCP range\n");
                         return false; //  ESP_FAIL if initializing failed
                     }
@@ -754,7 +778,7 @@ namespace ufo
                             // "The GatewayP address (%s) can't be within the DHCP range (%s -- %s)", gateway.toString().c_str(),
                             // IPAddress(_byte_swap32(lease.start_ip.addr)).toString().c_str(), IPAddress(_byte_swap32(lease.end_ip.addr)).toString().c_str());
                         // printf("The GatewayP address can't be within the DHCP range\n");
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "bad subnet")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "bad subnet")));
     
                         return false; //  ESP_FAIL if initializing failed
                     }
@@ -771,7 +795,7 @@ namespace ufo
                     err = esp_netif_dhcps_option(_netifs[itf], ESP_NETIF_OP_SET, ESP_NETIF_REQUESTED_IP_ADDRESS, (void *)&lease, sizeof(dhcps_lease_t));
                     if (err)
                     {
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "bad subnet")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "bad subnet")));
                         // printf("DHCPS Set Lease Failed! 0x%04x: %s\n", err, esp_err_to_name(err));
                         return false;
                     }
@@ -783,7 +807,7 @@ namespace ufo
                         err = esp_netif_dhcps_option(_netifs[itf], ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER, &dhcps_dns_value, sizeof(dhcps_dns_value));
                         if (err)
                         {
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "dhcp")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "dhcp")));
                         // printf("Netif Set DHCP Option Failed! 0x%04x: %s\n", err, esp_err_to_name(err));
                             return false;
                         }
@@ -793,7 +817,7 @@ namespace ufo
                     err = esp_netif_dhcps_start(_netifs[itf]);
                     if (err)
                     {
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "dhcp")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "dhcp")));
                         // printf("DHCPS Start Failed! 0x%04x: %s\n", err, esp_err_to_name(err));
                         return false;
                     }
@@ -804,7 +828,7 @@ namespace ufo
                     err = esp_netif_dhcpc_stop(_netifs[itf]);
                     if (err != ESP_OK && err != ESP_ERR_ESP_NETIF_DHCP_ALREADY_STOPPED)
                     {
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "dhcp")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "dhcp")));
                         // printf("DHCP could not be stopped! Error: 0x%04x: %s\n", err, esp_err_to_name(err));
                         return false;
                     }
@@ -813,7 +837,7 @@ namespace ufo
                     err = esp_netif_set_ip_info(_netifs[itf], &info);
                     if (err != ERR_OK)
                     {
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "ip")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "ip")));
                         // printf("ETH IP could not be configured! Error: 0x%04x: %s\n", err, esp_err_to_name(err));
                         return false;
                     }
@@ -829,7 +853,7 @@ namespace ufo
                         err = esp_netif_dhcpc_start(_netifs[itf]);
                         if (err != ESP_OK && err != ESP_ERR_ESP_NETIF_DHCP_ALREADY_STARTED)
                         {
-                            _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "dhsp")));
+                            __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_ip, "dhsp")));
                             // printf("DHCP could not be started! Error: 0x%04x: %s\n", err, esp_err_to_name(err));
                             return false;
                         }

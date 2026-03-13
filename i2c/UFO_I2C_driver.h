@@ -39,8 +39,6 @@ namespace ufo
 
             dev_status_t _dstatus = dev_status_t::undef;
 
-            ufo::Error_t &_error = ufo::Error_t::GetInstance();
-
         public:
             UFO_I2C_Driver() {}
 
@@ -52,10 +50,7 @@ namespace ufo
                     esp_err_t ret = i2c_driver_delete(static_cast<i2c_port_t>(_port));
                     if (ret != ESP_OK)
                     {
-                        // CriticalError_t e;
-                        // e._info = GenerateInfo_Code(error::codes_t::i2c_driver_del, "not inited");
-                        // _error.Push(e);
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_driver_del, "not inited")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_driver_del, "not inited")));
                         _dstatus = dev_status_t::error;
                     }
                     _dstatus = dev_status_t::off;
@@ -82,10 +77,7 @@ namespace ufo
                 {
                     if (config::ufo_i2c_supported < 2)
                     {
-                        CriticalError_t e;
-                        // e._info = GenerateInfo_Code(error::codes_t::i2c_not_supported, "i2c-driver::no software");
-                        // _error.Push(e);
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_not_supported, "i2c-driver::no software")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_not_supported, "i2c-driver::no software")));
                         ret = ESP_FAIL;
                         _dstatus = dev_status_t::error;
                         return ret;
@@ -96,10 +88,7 @@ namespace ufo
                 {
                     if (pinSCL == gpio_num_t::GPIO_NUM_21 || pinSCL == gpio_num_t::GPIO_NUM_22 || pinSCL == gpio_num_t::GPIO_NUM_22 || pinSCL == gpio_num_t::GPIO_NUM_21)
                     {
-                        // CriticalError_t e;
-                        // e._info = GenerateInfo_Code(error::codes_t::i2c_incr_pins, "i2c-driver::incorrect pins");
-                        // _error.Push(e);
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_incr_pins, "i2c-driver::incorrect pins")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_incr_pins, "i2c-driver::incorrect pins")));
 
                         ret = ESP_FAIL;
                         _dstatus = dev_status_t::error;
@@ -126,8 +115,8 @@ namespace ufo
                 {
                     // CriticalError_t e;
                     // e._info = GenerateInfo_Code(error::codes_t::i2c_conf_fail, "configurating failed");
-                    // _error.Push(e);
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_conf_fail, "configurating failed")));
+                    // __global_error.Push(e);
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_conf_fail, "configurating failed")));
                     _dstatus = dev_status_t::off;
                     return ret;
                 }
@@ -137,14 +126,14 @@ namespace ufo
                 ret = i2c_driver_install(static_cast<i2c_port_t>(_port), conf.mode, 0, 0, 0);
                 if (ret != ESP_OK)
                 {
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_conf_fail, "installing failed")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_conf_fail, "installing failed")));
                     _dstatus = dev_status_t::off;
                     return ret;
                 }
                 ret = i2c_set_timeout(static_cast<i2c_port_t>(_port), UFO_I2C_TIMEOUT);
                 if (ret != ESP_OK)
                 {
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_tcfg_fail, "timeout-config failed")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_tcfg_fail, "timeout-config failed")));
                     _dstatus = dev_status_t::off;
                     return ret;
                 }
@@ -168,7 +157,7 @@ namespace ufo
                 ret = __Write(addr, buf, size);
                 if (ret != ESP_OK)
                 {
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_write, "write problem")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_write, "write problem")));
                     _dstatus = dev_status_t::warning;
                 }
 
@@ -209,7 +198,7 @@ namespace ufo
                 if (ret != ESP_OK)
                 {
                 // todo::
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_write_read, "read problem")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_write_read, "read problem")));
                     _dstatus = dev_status_t::warning;
                 }
 
@@ -233,8 +222,8 @@ namespace ufo
                 {
                     // Warning_t w;
                     // w._info = GenerateInfo_Code(error::codes_t::i2c_write_read, "write-read problem");
-                    // _error.Push(w);
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_write_read, "write-read problem")));
+                    // __global_error.Push(w);
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::i2c_write_read, "write-read problem")));
                     _dstatus = dev_status_t::warning;
                 }
                 return ret;
@@ -250,8 +239,8 @@ namespace ufo
                 {
                     // CriticalError_t e;
                     // e._info = GenerateInfo_Code(error::codes_t::i2c_null_operations, "not inited");
-                    // _error.Push(e);
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::i2c_null_operations, "lnot inited")));
+                    // __global_error.Push(e);
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::i2c_null_operations, "lnot inited")));
                     _dstatus = dev_status_t::error;
                 return ESP_FAIL;
                 }

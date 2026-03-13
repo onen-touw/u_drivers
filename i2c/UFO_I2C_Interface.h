@@ -32,11 +32,7 @@ namespace ufo
             
             if (!_driver->Initialized())
             {
-                ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                // CriticalError_t e;
-                // e._info = GenerateInfo_Code(error::codes_t::i2c_null_operations, "not inited");
-                // _error.Push(e);
-                _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::i2c_null_operations, "lnot inited")));
+                __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::i2c_null_operations, "lnot inited")));
                 err = ESP_FAIL;
             }
             return err;

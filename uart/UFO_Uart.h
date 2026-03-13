@@ -93,11 +93,9 @@ namespace ufo
                 {
                     return ESP_FAIL;
                 }
-                ufo::Error_t &_error = ufo::Error_t::GetInstance();
-
                 if (uart_is_driver_installed(_unum))
                 {
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::urt_drv_install, "drv was installed")));
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::urt_drv_install, "drv was installed")));
 
                     return ESP_FAIL;
                 }
@@ -108,8 +106,8 @@ namespace ufo
                 // err = uart_driver_install(_unum, UFO_UART_RX_BUF_SIZE * 2, 0, 20, &_minimal._eventQueue, 0);
                 if (err != ESP_OK)
                 {
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::urt_drv_install, "error")));
-                return err; 
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::urt_drv_install, "error")));
+                    return err; 
                 }
 
                 uart_config_t ucfg = {};
@@ -123,7 +121,7 @@ namespace ufo
                 err = uart_param_config(_unum, &ucfg);
                 if (err != ESP_OK)
                 {
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::urt_drv_cfg, "cfg error")));
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::urt_drv_cfg, "cfg error")));
                     return err;
                 }
                 if (unum != unum_t::UART_NUM_0)
@@ -135,21 +133,21 @@ namespace ufo
                 }
                 if (err != ESP_OK)
                 {
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::urt_drv_cfg, "pin error")));
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::urt_drv_cfg, "pin error")));
                     return err;
                 }
 
                 err = uart_set_rx_timeout(_unum, _timeoutRx);
                 if (err != ESP_OK)
                 {
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::urt_drv_tmout, "timeout error")));
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::urt_drv_tmout, "timeout error")));
                     return err;
                 }
 
                 err = uart_set_rx_full_threshold(_unum, _txFiFoFull);
                 if (err != ESP_OK)
                 {
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::urt_drv_tmout, "rx_full_threshold error")));
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::urt_drv_tmout, "rx_full_threshold error")));
                     return err;
                 }
 #ifdef UFO_UART_EVENTS

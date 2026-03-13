@@ -25,20 +25,18 @@ namespace ufo {
             }
 
             void init(spi_host_device_t devno, gpio_num_t mosi, gpio_num_t miso,gpio_num_t sclk){
-                ufo::Error_t &_error = ufo::Error_t::GetInstance();
-
                 if (config::ufo_spi_supported < 2 )
                 {
                     if (_devno == spi_host_device_t::SPI3_HOST)
                     {
-                        _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::spi_drv_init, "spi init")));
+                        __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::spi_drv_init, "spi init")));
                         return;
                     }
                 }
                 if (_devno == spi_host_device_t::SPI1_HOST)
                 {
                     _devno = SPI_HOST_MAX;
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::spi_drv_init, "spi init")));
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::spi_drv_init, "spi init")));
                     return;
                 }
                 _devno = devno;
@@ -46,7 +44,7 @@ namespace ufo {
                 
                 if (_drvcnt == 2)
                 {
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::spi_drv_init, "max cnt")));
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::spi_drv_init, "max cnt")));
                     // crit error
                     return;
                 }
@@ -63,7 +61,7 @@ namespace ufo {
 
                 if (ret != ESP_OK){
                     // crit err
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::spi_drv_init, "ini")));
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::spi_drv_init, "ini")));
                 }
                 ++_drvcnt;
                 _dstatus = dev_status_t::ok;
@@ -76,8 +74,7 @@ namespace ufo {
 	            esp_err_t err = spi_bus_add_device(_devno, &cfg, &handle);
                 if (err != ESP_OK)
                 {
-                    Error_t &_error = Error_t::GetInstance();
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::spi_drv_init, "descr")));
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::spi_drv_init, "descr")));
                     _dstatus = dev_status_t::error;
                     return nullptr;
                 }
@@ -88,8 +85,7 @@ namespace ufo {
                 esp_err_t e = spi_bus_remove_device(hand);
                 if (e != ESP_OK)
                 {
-                    Error_t &_error = Error_t::GetInstance();
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::spi_drv_init, "rm")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::spi_drv_init, "rm")));
                     _dstatus = dev_status_t::warning;
                 }
                 hand = nullptr;

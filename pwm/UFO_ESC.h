@@ -36,11 +36,7 @@ namespace ufo
                 };
                 if (gpio_config(&conf) != ESP_OK)
                 {
-                    ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    // CriticalError_t e;
-                    // e._info = GenerateInfo_Code(error::codes_t::pwm_gpio_cfg, "GPIO config");
-                    // _error.Push(e);
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::pwm_gpio_cfg, "GPIO config")));
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::pwm_gpio_cfg, "GPIO config")));
                     return;
                 }
                 
@@ -53,8 +49,7 @@ namespace ufo
 
                 if (ledc_timer_config(&timerCfg) != ESP_OK)
                 {
-                    ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::pwm_ledc_timer, "ledc_timer config")));
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::pwm_ledc_timer, "ledc_timer config")));
                     return;
                 }
 
@@ -70,8 +65,7 @@ namespace ufo
                 
                 if (ledc_channel_config(&chanCfg) != ESP_OK)
                 {
-                    ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::pwm_ledc_cfg, "ledc_channel config")));
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::pwm_ledc_cfg, "ledc_channel config")));
                     return;
                 }
             }

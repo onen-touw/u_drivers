@@ -18,10 +18,13 @@ namespace ufo
             wfsta_t() {}
             ~wfsta_t() {}
 
-            ip_t get_ip()  {
+            ip_cfg_t get_ip_config() const {
+                return _get_ip_config(esp_interface_t::ESP_IF_WIFI_STA);
+            }
+            ip_t get_ip() const {
                 return _get_ip(esp_interface_t::ESP_IF_WIFI_STA);
             }
-            ip_t get_mask()  {
+            ip_t get_mask() const {
                 return _get_netmask(esp_interface_t::ESP_IF_WIFI_STA);
             }
             ip_t get_gateway() const {
@@ -61,7 +64,6 @@ namespace ufo
 
             bool enable()
             {
-                ufo::Error_t &_error = ufo::Error_t::GetInstance();
                 esp_err_t err = ESP_OK;
                 wifi_mode_t curr = get_mode();
 
@@ -86,7 +88,7 @@ namespace ufo
                 {
                     // log_e("STA was enabled, but netif is NULL???");
                     printf("!netif\n");
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return false;
                 }
 
@@ -94,7 +96,7 @@ namespace ufo
                 if (err != ESP_OK)
                 {
                     // log_e("Could not set hostname! %d", err);
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return false;
                 }
                 err = esp_wifi_set_mode(wifi_mode_t::WIFI_MODE_STA);
@@ -102,7 +104,7 @@ namespace ufo
                 {
                     // log_e("Could not set mode! %d", err);
                     printf("!esp_wifi_set_mode\n");
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return false;
                 }
 
@@ -112,7 +114,7 @@ namespace ufo
                     if (err != ESP_OK)
                     {
                         // log_e("Could not enable long range on STA! %d", err);
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                         return false;
                     }
                 }
@@ -156,8 +158,7 @@ namespace ufo
                 {
                     // log_e("STA clear config failed! 0x%x: %s", err, esp_err_to_name(err));
                     printf("!esp_wifi_set_config\n");
-                    ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return false;
                 }
                 if (_flags.get(flag_pos_t::sta_conn))
@@ -191,19 +192,17 @@ namespace ufo
 
             bool connect()
             {
-                ufo::Error_t &_error = ufo::Error_t::GetInstance();
-
                 if (!_netifs[ESP_IF_WIFI_STA])
                 {
                     // log_e("STA not started! You must call begin() first.");
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return false;
                 }
 
                 if (connected())
                 {
                     // log_w("STA already connected.");
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return true;
                 }
 
@@ -212,14 +211,14 @@ namespace ufo
                 if (err != ESP_OK)
                 {
                     // log_e("STA config failed");
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return false;
                 }
                 err = esp_wifi_set_config(WIFI_IF_STA, &current_conf);
                 if (err != ESP_OK)
                 {
                     // log_e("STA config failed");
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return false;
                 }
 
@@ -228,7 +227,7 @@ namespace ufo
                     // if (!config())
                     // {
                     //     log_e("STA failed to configure dynamic IP!");
-                    // _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    // __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
 
                     //     return false;
                     // }
@@ -236,7 +235,7 @@ namespace ufo
                 err = esp_wifi_connect();
                 if (err != ESP_OK)
                 {
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "!esp_wifi_connect")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "!esp_wifi_connect")));
                     return false;
                 }
                 return true;
@@ -369,12 +368,10 @@ namespace ufo
                 const uint8_t *bssid = 0,
                 bool call_connect = true)
             {
-                ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                
                 if (!_netifs[ESP_IF_WIFI_STA])
                 {
                     // log_e("STA not started! You must call begin() first.");
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return false;
                 }
 
@@ -391,7 +388,7 @@ namespace ufo
                 if (!wpa2_ssid || *wpa2_ssid == 0x00 || strlen(wpa2_ssid) > 32)
                 {
                     // log_e("SSID too long or missing!");
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
 
                     return false;
                 }
@@ -399,7 +396,7 @@ namespace ufo
                 if (wpa2_identity && strlen(wpa2_identity) > 64)
                 {
                     // log_e("identity too long!");
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
 
                     return false;
                 }
@@ -407,7 +404,7 @@ namespace ufo
                 if (wpa2_username && strlen(wpa2_username) > 64)
                 {
                     // log_e("username too long!");
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
 
                     return false;
                 }
@@ -415,7 +412,7 @@ namespace ufo
                 if (wpa2_password && strlen(wpa2_password) > 64)
                 {
                     // log_e("password too long!");
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
 
                     return false;
                 }
@@ -474,14 +471,12 @@ namespace ufo
 
             bool disconnect(bool clear_cfg = false, uint32_t timeout = 1000)
             {
-                ufo::Error_t &_error = ufo::Error_t::GetInstance();
-
                 if (clear_cfg)
                 {
                     if (!start())
                     {
                         // log_e("STA not started! You must call begin first.");
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                         return false;
                     }
                     wifi_config_t conf = {};
@@ -489,7 +484,7 @@ namespace ufo
                     if (err != ESP_OK)
                     {
                         // log_e("STA clear config failed! 0x%x: %s", err, esp_err_to_name(err));
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                         return false;
                     }
                 }
@@ -504,7 +499,7 @@ namespace ufo
                 if (err != ESP_OK)
                 {
                     // log_e("STA disconnect failed! 0x%x: %s", err, esp_err_to_name(err));
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "!esp_wifi_disconnect")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "!esp_wifi_disconnect")));
                     return false;
                 }
 
@@ -595,8 +590,7 @@ namespace ufo
                 if (err)
                 {
                     // log_e("Could not set STA bandwidth! 0x%x: %s", err, esp_err_to_name(err));
-                    ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
                     return false;
                 }
     

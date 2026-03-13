@@ -14,10 +14,13 @@ namespace ufo
             wfap_t(/* args */) {}
             ~wfap_t() {}
 
-            ip_t get_ip()  {
+            ip_cfg_t get_ip_config() const {
+                return _get_ip_config(esp_interface_t::ESP_IF_WIFI_AP);
+            }
+            ip_t get_ip() const {
                 return _get_ip(esp_interface_t::ESP_IF_WIFI_AP);
             }
-            ip_t get_mask()  {
+            ip_t get_mask() const {
                 return _get_netmask(esp_interface_t::ESP_IF_WIFI_AP);
             }
             ip_t get_gateway() const {
@@ -55,7 +58,6 @@ namespace ufo
 
             bool enable()
             {
-                ufo::Error_t &_error = ufo::Error_t::GetInstance();
                 esp_err_t err = ESP_OK;
                 wifi_mode_t curr = get_mode();
                 
@@ -76,7 +78,7 @@ namespace ufo
                 { // wf-driver cant initialize
                     // error or warning
 
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "!ini_drv")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "!ini_drv")));
                     // printf("!init driver\n");
                     return false;
                 }
@@ -88,7 +90,7 @@ namespace ufo
                 {
                     // log_e("STA was enabled, but netif is NULL???");
                     printf("!netif\n");
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "!netif")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "!netif")));
                     return false;
                 }
 
@@ -96,7 +98,7 @@ namespace ufo
                 if (err != ESP_OK)
                 {
                     printf("!esp_wifi_set_mode\n");
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "!mode")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "!mode")));
                     return false;
                 }
 
@@ -105,7 +107,7 @@ namespace ufo
                     err = esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_LR);
                     if (err != ESP_OK)
                     {
-                        _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "!proto")));
+                        __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "!proto")));
                         return false;
                     }
                 }
@@ -143,9 +145,7 @@ namespace ufo
                 esp_err_t err = esp_wifi_set_config(WIFI_IF_AP, &conf);
                 if (err != ESP_OK)
                 {
-                    // printf("!esp_wifi_set_config\n");
-                    ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_disable, "!conf")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_disable, "!conf")));
                     return false;
                 }
                 utl::sleep_for(200);
@@ -195,8 +195,7 @@ namespace ufo
                 if (err != ESP_OK)
                 {
                     // printf("Set AP config failed! 0x%x: %s\n", err, esp_err_to_name(err));
-                    ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::wf_create, "!conf")));
+                    __global_error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::wf_create, "!conf")));
                     return false;
                 }
                 
@@ -217,8 +216,7 @@ namespace ufo
                 if (err != ESP_OK)
                 {
                     // printf("Set AP config failed! 0x%x: %s\n", err, esp_err_to_name(err));
-                    ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                    _error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_clear, "!conf")));
+                    __global_error.Push(Warning_t(GenerateInfo_Code(error::codes_t::wf_clear, "!conf")));
                     return false;
                 }
                 return true;
