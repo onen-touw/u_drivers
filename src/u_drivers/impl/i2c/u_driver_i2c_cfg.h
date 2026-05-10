@@ -1,6 +1,7 @@
 #pragma once 
 
 #include "../u_driver_cfg.h"
+#include "soc/gpio_num.h"
 
 namespace __u_drivers
 {

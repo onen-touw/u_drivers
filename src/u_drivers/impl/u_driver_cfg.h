@@ -6,6 +6,8 @@
 #include "u_sys/btflg.h"
 #include "u_sys/mutex.h"
 
+#include "soc/gpio_num.h"
+
 #ifndef U_UART_DRIVERS_CNT
 #   define U_UART_DRIVERS_CNT 1
 #else 
@@ -35,8 +37,8 @@ namespace __u_drivers
     {
         ufo::bit_flag_t<uint16_t> state; // temp
         uint16_t error_count = 0;
-        uint16_t error_code = 0;
-        uint16_t user_count = 0;
+        uint8_t error_code = 0;
+        uint8_t user_count = 0;
     };
 
     // Шаблонный класс для метаданных драйвера
@@ -63,7 +65,7 @@ namespace __u_drivers
             _meta.state.set(state);
         }
 
-        void inc_error(uint16_t error_code = 0)
+        void inc_error(uint8_t error_code = 0)
         {
             ufo::lock_guard<lock_t> lock(_mutex);
             _meta.error_count++;

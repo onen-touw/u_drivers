@@ -527,11 +527,11 @@ namespace ufo
                         // connect->_ip = event->ip_info.ip.addr;
                         // connect->_reconection = 0;
 
-                        Trace_t::flog("\nip: %lu,\t gw: %lu,\t msk: %lu\n", event->ip_info.ip.addr, event->ip_info.gw.addr, event->ip_info.netmask.addr);
+                        printf("\nip: %lu,\t gw: %lu,\t msk: %lu\n", event->ip_info.ip.addr, event->ip_info.gw.addr, event->ip_info.netmask.addr);
                     }
                     else if (id == IP_EVENT_STA_LOST_IP)
                     {
-                        Trace_t::flog("ip-disconnected\n");
+                        printf("ip-disconnected\n");
                     }
                 }
             }
@@ -566,7 +566,7 @@ namespace ufo
                     {
                         // lock???
                         wfsta_t::_flags.set(flag_pos_t::sta_conn);
-                        Trace_t::log("sta-connected-to-ap\n");
+                        printf("sta-connected-to-ap\n");
                         // connect->_reconection = 0;
                     }
                 }

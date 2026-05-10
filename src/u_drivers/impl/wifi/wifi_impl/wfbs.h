@@ -29,7 +29,6 @@
 #include "dhcpserver/dhcpserver.h"
 
 #include "u_sys/btflg.h"
-#include "u_sys/error.h"
 #include "u_sys/mutex.h"
 #include "u_sys/ipt.h"
 
@@ -393,9 +392,8 @@ namespace ufo
                     esp_err_t e = esp_wifi_deinit();
                     if (e != ESP_OK)
                     {
-                        ufo::Error_t &_error = ufo::Error_t::GetInstance();
-                        _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
-                        // critical
+                        // _error.Push(CriticalError_t(GenerateInfo_Code(error::codes_t::wf_drv_init, "drv")));
+                        __set_err(10);
                     }
                     esp_event_loop_delete_default();
                     esp_netif_deinit();
@@ -570,44 +568,44 @@ namespace ufo
             }
             
             void _log_info(esp_interface_t itf) const{
-                Trace_t::log("ip_info: ");
+                printf("ip_info: ");
                 if (!_netifs[itf])
                 {
-                    Trace_t::log("\terror\n");
+                    printf("\terror\n");
                     return;
                 }
 
                 wifi_mode_t m = get_mode();
                 if (m == wifi_mode_t::WIFI_MODE_NULL)
                 {
-                    Trace_t::log("null\n");
+                    printf("null\n");
                     return;
                 }
                 else if (m == wifi_mode_t::WIFI_MODE_AP)
                 {
-                    Trace_t::log(" ap\n");
+                    printf(" ap\n");
                 }
                 else
                 {
-                    Trace_t::log(" sta\n");
+                    printf(" sta\n");
                 }
 
                 esp_netif_ip_info_t ip = {};
                 if (esp_netif_get_ip_info(_netifs[itf], &ip) != ESP_OK)
                 {
-                    Trace_t::log("\terror\n");
+                    printf("\terror\n");
                     return;
                 }
-                Trace_t::log("ip:\n");
+                printf("ip:\n");
                 ip_t(ip.ip.addr).log();
-                Trace_t::log("mask:\n");
+                printf("mask:\n");
                 ip_t(ip.netmask.addr).log();
-                Trace_t::flog("CIDR: %u\n", calc_subnet_CIDR(ip.netmask.addr));
-                Trace_t::log("gw:\n");
+                printf("CIDR: %u\n", calc_subnet_CIDR(ip.netmask.addr));
+                printf("gw:\n");
                 ip_t(ip.gw.addr).log();
-                Trace_t::log("broadcast:\n");
+                printf("broadcast:\n");
                 calc_broadcastID(ip.ip.addr, ip.netmask.addr).log();
-                Trace_t::log("network:\n");
+                printf("network:\n");
                 calc_networkID(ip.ip.addr, ip.netmask.addr).log();
             }
 

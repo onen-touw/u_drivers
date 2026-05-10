@@ -226,7 +226,7 @@ namespace ufo
                 {
                     if (id == IP_EVENT_AP_STAIPASSIGNED)
                     {
-                        Trace_t::flog("IP_EVENT_AP_STAIPASSIGNED\n");       // temp
+                        printf("IP_EVENT_AP_STAIPASSIGNED\n");       // temp
                         ip_event_ap_staipassigned_t *event = reinterpret_cast<ip_event_ap_staipassigned_t*>(data);
                         ip_t ip(event->ip.addr);
                         printf("sta-connected: " MACSTR ", ip: %u.%u.%u.%u\n", MAC2STR(event->mac), ip[3],ip[2],ip[1],ip[0]);

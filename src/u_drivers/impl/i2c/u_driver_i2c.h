@@ -14,6 +14,7 @@ namespace __u_drivers
         driver_i2c_port_e port;
         static constexpr uint32_t timeout = 50;
         bool _initialized = false;
+        
     public:
         u_driver_i2c_t(){}
         ~u_driver_i2c_t()
@@ -22,6 +23,8 @@ namespace __u_drivers
         }
 
         bool initialized() const {return _initialized;}
+
+        driver_i2c_port_e get_port() const { return port; }
 
         void driver_init(driver_i2c_port_e _port, gpio_num_t pinSDA, gpio_num_t pinSCL, uint32_t freq = 400000UL)
         {
@@ -68,7 +71,6 @@ namespace __u_drivers
                 return;
             }
 
-            __meta_i2c[static_cast<size_t>(port)].inc_user();
             __meta_i2c[static_cast<size_t>(port)].set_state(driver_state_t::started);
             _initialized = true;
         }
@@ -80,7 +82,6 @@ namespace __u_drivers
                 return;
             }
 
-            __meta_i2c[static_cast<size_t>(port)].dec_user();
             __meta_i2c[static_cast<size_t>(port)].set_state(driver_state_t::initialized, true);
             __meta_i2c[static_cast<size_t>(port)].set_state(driver_state_t::started, true);
             esp_err_t ret = i2c_driver_delete(static_cast<i2c_port_t>(port));

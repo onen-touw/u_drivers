@@ -19,6 +19,4 @@ namespace ufo
         return meta;
     }
 
-    
-
 } // namespace ufo
