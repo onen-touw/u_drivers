@@ -19,15 +19,19 @@ namespace __u_drivers
         u_driver_spi_interface_t(const spi_device_interface_config_t& dev_cfg, spi_port_t port = spi_port_t::SPI1_HOST) : 
             _driver(__driver_spi__instance[static_cast<size_t>(port)])
         {
-            const auto& cfg = __cfg_spi[static_cast<size_t>(port)];
-            _driver.driver_init(port);
+            auto e = _driver.driver_init(port);
+            if (e!= ESP_OK)
+            {
+                return;
+            }
 
             _handle = _driver.mk_dev(dev_cfg);
             if (!_handle)
             {
-                ESP_LOGE("drv_spi", "mk_dev");
+                ESP_LOGE(drv_t::tag, "mk_dev");
+                return;
             }
-            __meta_spi[static_cast<size_t>(_driver.get_port())].inc_user();
+            __info_spi[static_cast<size_t>(_driver.get_port())].inc_user();
         }
 
         ~u_driver_spi_interface_t()
@@ -35,9 +39,11 @@ namespace __u_drivers
             if (_handle)
             {
                 _driver.rm_dev(_handle);
-                __meta_spi[static_cast<size_t>(_driver.get_port())].dec_user();
+                __info_spi[static_cast<size_t>(_driver.get_port())].dec_user();
             }
         }
+
+        spi_device_handle_t get_native() {return _handle;}
 
         bool write(const uint8_t* data, size_t size)
         {
@@ -46,6 +52,7 @@ namespace __u_drivers
             if ( size > 0 ) {
                 transaction.length = size * 8;	// bit size = byte * 8
                 transaction.tx_buffer = data;
+                transaction.rx_buffer = nullptr;
                 return spi_device_transmit(_handle, &transaction) == 1;
             }
             return false;
@@ -56,6 +63,7 @@ namespace __u_drivers
             t.length = len * 8;
             t.tx_buffer = tx;
             t.rx_buffer = rx;
+            t.rxlength = len * 8;
             return spi_device_transmit(_handle, &t) == 1;
         }
 

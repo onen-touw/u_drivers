@@ -25,11 +25,21 @@ namespace __u_drivers
     };
 
     // for driver state tracing
-    static driver_meta_registry __meta_uart[U_UART_DRIVERS_CNT] = {};
+    static driver_info_t<driver_uart_cnf_t> __info_uart[U_UART_DRIVERS_CNT] = 
+    {
+            driver_uart_cnf_t{.tx = gpio_num_t::GPIO_NUM_1, .rx = gpio_num_t::GPIO_NUM_3, .baudrate = 115200}
+#if U_UART_DRIVERS_CNT > 1
+           , driver_uart_cnf_t{.tx = gpio_num_t::GPIO_NUM_16, .rx = gpio_num_t::GPIO_NUM_17} 
+#endif
+    };
 
-    // for auto config from .ini files and driver tracing
-    static driver_uart_cnf_t __cfg_uart[U_UART_DRIVERS_CNT] =
-        {
-            {.tx = gpio_num_t::GPIO_NUM_1, .rx = gpio_num_t::GPIO_NUM_3}};
+//     // for auto config from .ini files and driver tracing
+//     static driver_uart_cnf_t __cfg_uart[U_UART_DRIVERS_CNT] =
+//         {
+//             {.tx = gpio_num_t::GPIO_NUM_1, .rx = gpio_num_t::GPIO_NUM_3, .baudrate = 115200}
+// #if U_UART_DRIVERS_CNT > 1
+//            ,{.tx = gpio_num_t::GPIO_NUM_16, .rx = gpio_num_t::GPIO_NUM_17} 
+// #endif
+//         };
 
 } // namespace __u_drivers

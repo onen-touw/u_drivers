@@ -16,24 +16,19 @@ namespace __u_drivers
         drv_t& _driver;
 
     public:
-        u_driver_uart_interface_t(uart_port_t port, cfg_t cfg, bool upd_cfg = true) 
+        u_driver_uart_interface_t(uart_port_t port, const cfg_t& cfg) 
             : _driver(__u_drivers::__driver_uart__instance[static_cast<size_t>(port)]) 
         {
-            if (upd_cfg)
-            {
-                auto& __cfg = __cfg_uart[static_cast<size_t>(port)];
-                __cfg = cfg;
-            }
-
-            _driver.driver_init(port, cfg.baudrate, cfg.rx, cfg.tx);
+            
+            __info_uart[static_cast<size_t>(port)].set_cfg(cfg);
+            _driver.driver_init();
         }
 
         // auto config for choosen port from __cfg
         u_driver_uart_interface_t(uart_port_t port) 
             : _driver(__u_drivers::__driver_uart__instance[static_cast<size_t>(port)]) 
         {
-            auto& cfg = __cfg_uart[static_cast<size_t>(port)];
-            _driver.driver_init(port, cfg.baudrate, cfg.rx, cfg.tx);
+            _driver.driver_init();
         }
 
         ~u_driver_uart_interface_t()

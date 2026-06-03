@@ -5,49 +5,66 @@
 // idf-include
 #include <driver/spi_master.h>
 #include "esp_timer.h"
+#include "esp_log.h"
 
 namespace __u_drivers
 {
 
     class u_driver_spi_t
     {
+    public:
+        static constexpr const char* tag = "dspi";
     private:
         driver_spi_port_e port;
         bool _initialized = false;
         
+
     public:
-        u_driver_spi_t(){}
+        u_driver_spi_t()
+        {
+            ESP_LOGI(tag, "[construct]");
+        }
         ~u_driver_spi_t()
         {
+            ESP_LOGI(tag, "[destruct]");
             driver_deinit();
         }
+
+        u_driver_spi_t(const u_driver_spi_t&) = delete;
+        u_driver_spi_t(u_driver_spi_t&&) = delete;
 
         bool initialized() const {return _initialized;}
 
         driver_spi_port_e get_port() const { return port; }
 
-        void driver_init(driver_spi_port_e _port)
+        esp_err_t driver_init(driver_spi_port_e _port)
         {
             if (_initialized)
             {
-                return;
+                return ESP_OK;
             }
             port = _port;
-            
-            __meta_spi[static_cast<size_t>(port)].set_state(driver_state_t::initialized);
 
-            const auto& cfg = __cfg_spi[static_cast<size_t>(port)];
+            ESP_LOGI(tag, "[init] start");
+
             
-            esp_err_t ret = spi_bus_initialize(_port, &cfg, SPI_DMA_CH_AUTO );
+            const auto& cfg = __info_spi[static_cast<size_t>(port)].get_cfg();
+            
+            esp_err_t ret = spi_bus_initialize(_port, &cfg, SPI_DMA_DISABLED );
 
             if (ret != ESP_OK)
             {
+                ESP_LOGI(tag, "[init] !init");
                 __set_err(1);
-                return;
+                return ret;
             }
 
-            __meta_spi[static_cast<size_t>(port)].set_state(driver_state_t::started);
+            __info_spi[static_cast<size_t>(port)].set_state(driver_state_t::initialized);
+            __info_spi[static_cast<size_t>(port)].set_state(driver_state_t::started);
             _initialized = true;
+
+            ESP_LOGI(tag, "[init] done");
+            return ret;
         }
 
         void driver_deinit()
@@ -56,15 +73,18 @@ namespace __u_drivers
             {
                 return;
             }
+            ESP_LOGI(tag, "[deinit]");
 
-            __meta_spi[static_cast<size_t>(port)].set_state(driver_state_t::initialized, true);
-            __meta_spi[static_cast<size_t>(port)].set_state(driver_state_t::started, true);
+            __info_spi[static_cast<size_t>(port)].set_state(driver_state_t::initialized, true);
+            __info_spi[static_cast<size_t>(port)].set_state(driver_state_t::started, true);
             esp_err_t ret = spi_bus_free(port);
 
             // never happen because of static declaration
             if (ret != ESP_OK) {
+                ESP_LOGI(tag, "[init] fail");
                 __set_err(4);
             }
+            _initialized = false;
         }
 
         spi_device_handle_t mk_dev(spi_device_interface_config_t cfg)
@@ -92,7 +112,7 @@ namespace __u_drivers
         private:
             void __set_err(uint8_t code)
             {
-                __meta_spi[static_cast<size_t>(port)].inc_error(code);
+                __info_spi[static_cast<size_t>(port)].inc_error(code);
             }
     };
 

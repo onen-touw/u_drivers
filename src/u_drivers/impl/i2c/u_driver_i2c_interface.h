@@ -13,9 +13,29 @@ namespace __u_drivers
     private:
         uint8_t _addr = 0;
         drv_t& _driver;
+        bool ifinit = false;
     public:
 
-        // WARNING: destructor do not deinit i2c driver!!!
+        /// WARNING: destructor do not deinit i2c driver!!!
+        ///
+        u_driver_i2c_interface_t(uint8_t addr, i2c_port_t port, const driver_i2c_cnf_t& cfg) 
+            : _addr(addr), _driver(__driver_i2c__instance[static_cast<size_t>(port)]) 
+        {
+            __info_i2c[static_cast<size_t>(port)].set_cfg(cfg);
+            auto e = _driver.driver_init(port);
+
+            if (e != ESP_OK)
+            {
+                return;
+            }
+
+            // we should inc user here because one driver provide many interfaces for users
+            __info_i2c[static_cast<size_t>(_driver.get_port())].inc_user();
+            ifinit = true;
+        }
+
+        /// WARNING: destructor do not deinit i2c driver!!!
+        /// Constructor without cfg
         u_driver_i2c_interface_t(uint8_t addr, i2c_port_t port = i2c_port_t::hardware) 
             : _addr(addr), _driver(__driver_i2c__instance[static_cast<size_t>(port)]) 
         {
@@ -24,15 +44,29 @@ namespace __u_drivers
             // directly from code (bad way) or configurated via console and files
             // if driver is initialized when parameters are updated requare driver restart (or esp reboot if it saved in cfg-file)
 
-            const auto& cfg = __cfg_i2c[static_cast<size_t>(port)];
-            _driver.driver_init(port, cfg.i2c_sda, cfg.i2c_scl, cfg.frequency);
-            __meta_i2c[static_cast<size_t>(_driver.get_port())].inc_user();
+            // const auto cfg = __info_i2c[static_cast<size_t>(port)];
+            auto e = _driver.driver_init(port);
 
+            if (e != ESP_OK)
+            {
+                return;
+            }
+
+            // we should inc user here because one driver provide many interfaces for users
+            __info_i2c[static_cast<size_t>(_driver.get_port())].inc_user();
+            ifinit = true;
         }
 
         ~u_driver_i2c_interface_t()
         {
-            __meta_i2c[static_cast<size_t>(_driver.get_port())].dec_user();
+            //... and we should dec user here...(see constructor)
+            // but decreasing can be only if constructor did correct initialization...
+            if (!ifinit)
+            {
+                return;
+            }
+            
+            __info_i2c[static_cast<size_t>(_driver.get_port())].dec_user();
         }
 
         void set_address(uint8_t addr)

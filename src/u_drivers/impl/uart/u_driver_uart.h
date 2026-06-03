@@ -4,6 +4,7 @@
 #include "driver/uart.h"
 #include "hal/uart_ll.h"
 #include "soc/uart_pins.h"
+#include "esp_log.h"
 
 namespace __u_drivers
 {
@@ -17,6 +18,7 @@ namespace __u_drivers
 
     public:
         using unum_t = u_uart_port_t;
+        static constexpr const char* tag = "duart";
 
     private:
         using iup_t = uart_port_t;
@@ -24,44 +26,63 @@ namespace __u_drivers
         bool _initialized = false;
 
     public:
-        u_driver_uart_t() 
+        u_driver_uart_t(unum_t uart_num) : 
+            _unum(static_cast<iup_t>(uart_num))
+
         {
-            
+            ESP_LOGI(tag, "(%u)[construct]", static_cast<size_t>(_unum));
         }
+
         ~u_driver_uart_t() 
         {
+            ESP_LOGI(tag, "(%u)[destruct]", static_cast<size_t>(_unum));
+
            driver_deinit();
         }
 
+        u_driver_uart_t(const u_driver_uart_t&) = delete;
+        u_driver_uart_t(u_driver_uart_t&&) = delete;
 
-        void driver_init(unum_t uart_num, uint32_t baudrate, gpio_num_t rx, gpio_num_t tx)
+
+        esp_err_t driver_init()
         {
+            ESP_LOGI(tag, "(%u)[init]: start", static_cast<size_t>(_unum));
+
             if (_initialized)
             {
+                ESP_LOGE(tag, "(%u)[init]: double init", static_cast<size_t>(_unum));
                 __set_err(23);
-                return;
+                return ESP_FAIL;
             }
-            _unum = static_cast<iup_t>(uart_num);
-            
+            auto user = __info_uart[_unum].get_user_cnt();
+            if (user)
+            {
+                ESP_LOGE(tag, "(%u)[init]: double init user", static_cast<size_t>(_unum));
+                __set_err(66);
+                return ESP_FAIL;
+            }
+
             esp_err_t err = ESP_OK;
 
             if (uart_is_driver_installed((_unum)))
             {
+                ESP_LOGE(tag, "(%u)[init]: double install", static_cast<size_t>(_unum));
                 __set_err(1);
-                return;
+                return ESP_FAIL;
             }
             
-            __meta_uart[static_cast<size_t>(_unum)].set_state(driver_state_t::initialized);
 
             err = uart_driver_install(_unum, buffer_sz, 0, 0, nullptr, 0);
             if (err != ESP_OK)
             {
+                ESP_LOGE(tag, "(%u)[init]: !install", static_cast<size_t>(_unum));
                 __set_err(2);
-                return; 
+                return err; 
             }
+            auto mcfg = __info_uart[_unum].get_cfg();
 
             uart_config_t ucfg = {};
-            ucfg.baud_rate = baudrate,
+            ucfg.baud_rate = mcfg.baudrate,
             ucfg.data_bits = UART_DATA_8_BITS,
             ucfg.parity = UART_PARITY_DISABLE,
             ucfg.stop_bits = UART_STOP_BITS_1,
@@ -71,14 +92,15 @@ namespace __u_drivers
             err = uart_param_config(_unum, &ucfg);
             if (err != ESP_OK)
             {
+                ESP_LOGE(tag, "(%u)[init]: !config", static_cast<size_t>(_unum));
                 __set_err(3);
                 __uninstall();
-                return;
+                return err; 
             }
 
             if (_unum != iup_t::UART_NUM_0)
             {
-                err = uart_set_pin(_unum, tx, rx, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+                err = uart_set_pin(_unum, mcfg.tx, mcfg.rx, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
             }
             else {
                 err = uart_set_pin(_unum, 1, 3, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
@@ -86,29 +108,37 @@ namespace __u_drivers
 
             if (err != ESP_OK)
             {
+                ESP_LOGE(tag, "(%u)[init]: !pinning", static_cast<size_t>(_unum));
                 __set_err(4);
                 __uninstall();
-                return;
+                return err; 
             }
 
             err = uart_set_rx_timeout(_unum, _timeoutRx);
             if (err != ESP_OK)
             {
+                ESP_LOGE(tag, "(%u)[init]: !tm", static_cast<size_t>(_unum));
                 __set_err(5);
                 __uninstall();
-                return;
+                return err; 
             }
 
             err = uart_set_rx_full_threshold(_unum, _txFiFoFull);
             if (err != ESP_OK)
             {
+                ESP_LOGE(tag, "(%u)[init]: !th", static_cast<size_t>(_unum));
                 __set_err(6);
                 __uninstall();
+                return err; 
             }
             _initialized = true;
+            __info_uart[static_cast<size_t>(_unum)].set_state(driver_state_t::initialized);
+            __info_uart[static_cast<size_t>(_unum)].inc_user();
+            __info_uart[static_cast<size_t>(_unum)].set_state(driver_state_t::started);
 
-            __meta_uart[static_cast<size_t>(_unum)].inc_user();
-            __meta_uart[static_cast<size_t>(_unum)].set_state(driver_state_t::started);
+            ESP_LOGI(tag, "(%u)[init]: done", static_cast<size_t>(_unum));
+
+            return err; 
         }
 
         void driver_deinit()
@@ -117,12 +147,13 @@ namespace __u_drivers
             {
                 return;
             }
-            
+            ESP_LOGI(tag, "(%u)[deinit]", static_cast<size_t>(_unum));
+
             __uninstall();
 
-            __meta_uart[static_cast<size_t>(_unum)].dec_user();
-            __meta_uart[static_cast<size_t>(_unum)].set_state(driver_state_t::initialized, true);
-            __meta_uart[static_cast<size_t>(_unum)].set_state(driver_state_t::started, true);
+            __info_uart[static_cast<size_t>(_unum)].dec_user();
+            __info_uart[static_cast<size_t>(_unum)].set_state(driver_state_t::initialized, true);
+            __info_uart[static_cast<size_t>(_unum)].set_state(driver_state_t::started, true);
         }
 
         void set_BaudRate(uint32_t br)
@@ -206,7 +237,7 @@ namespace __u_drivers
     private:
         void __set_err(uint8_t code)
         {
-            __meta_uart[static_cast<size_t>(_unum)].inc_error(code);
+            __info_uart[static_cast<size_t>(_unum)].inc_error(code);
         }
 
         void __uninstall()
@@ -220,8 +251,13 @@ namespace __u_drivers
 
     };
 
-
-    static u_driver_uart_t __driver_uart__instance[U_UART_DRIVERS_CNT] = {};
+    static u_driver_uart_t __driver_uart__instance[U_UART_DRIVERS_CNT] = 
+    {
+        u_driver_uart_t(u_uart_port_t::uart0)
+#if U_UART_DRIVERS_CNT > 1
+        ,u_driver_uart_t(u_uart_port_t::uart1)
+#endif
+    };
 
 
 } // namespace __u_drivers

@@ -7,33 +7,44 @@ namespace __u_drivers
 {
     class u_driver_spiffs_t
     {
-    private:
+    public: 
         static constexpr const char* tag = "spfs_drv";
+
+    private:
         bool _initialized = false;
-        
+        const char* _root = nullptr;
+
     public:
 
         u_driver_spiffs_t() 
         {
-            
+            ESP_LOGI(tag, "[construct]");
         }
         ~u_driver_spiffs_t() 
         {
+            ESP_LOGI(tag, "[destruct]");
            driver_deinit();
         }
 
+        u_driver_spiffs_t(const u_driver_spiffs_t&) = delete;
+        u_driver_spiffs_t(u_driver_spiffs_t&&) = delete;
 
-        void driver_init(const driver_spiffs_cnf_t& cfg)
+        const char* get_root() const 
         {
+            return _root;
+        }
 
+        esp_err_t driver_init()
+        {
             if (_initialized)
             {
-                return;
+                // in this case its ok
+                return ESP_OK;
             }
 
-            __meta_spiffs.set_state(driver_state_t::initialized);
-
             ESP_LOGI(tag, "[init]: Start");
+
+            auto cfg = __info_spiffs.get_cfg();
 
             esp_err_t ret = esp_vfs_spiffs_register(&cfg);
             if (ret != ESP_OK)
@@ -53,7 +64,7 @@ namespace __u_drivers
                     __set_err(3);
                     ESP_LOGE(tag, "[init]: Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
                 }
-                return;
+                return ret;
             }
 
             ESP_LOGI(tag, "[init]: Performing SPIFFS_check()");
@@ -62,16 +73,21 @@ namespace __u_drivers
             {
                 __set_err(4);
                 ESP_LOGE(tag, "SPIFFS_check() failed");
+                return ret;
             }
             ESP_LOGI(tag, "[init]: Done");
 
-            __meta_spiffs.set_state(driver_state_t::started);
+            __info_spiffs.set_state(driver_state_t::initialized);
+            __info_spiffs.set_state(driver_state_t::started);
+
             _initialized = true;
+            _root = cfg.partition_label;
+            return ret;
         }
 
         void __set_err(uint8_t code)
         {
-            __meta_spiffs.inc_error(code);
+            __info_spiffs.inc_error(code);
         }
 
         void driver_deinit()
@@ -81,12 +97,12 @@ namespace __u_drivers
                 return;
             }
 
-            ESP_LOGI(tag, "[deinit]: Start\n");
+            ESP_LOGI(tag, "[deinit]");
             
-            __meta_spiffs.set_state(driver_state_t::initialized, true);
-            __meta_spiffs.set_state(driver_state_t::started, true);
+            __info_spiffs.set_state(driver_state_t::initialized, true);
+            __info_spiffs.set_state(driver_state_t::started, true);
 
-            const auto& cfg = __cfg_spiffs;
+            auto cfg = __info_spiffs.get_cfg();
             esp_err_t ret =  esp_vfs_spiffs_unregister(cfg.partition_label);
             if (ret != ESP_OK)
             {

@@ -22,38 +22,42 @@ namespace __u_drivers
             driver_deinit();
         }
 
+        u_driver_i2c_t(const u_driver_i2c_t&) = delete;
+        u_driver_i2c_t(u_driver_i2c_t&&) = delete;
+
         bool initialized() const {return _initialized;}
 
         driver_i2c_port_e get_port() const { return port; }
 
-        void driver_init(driver_i2c_port_e _port, gpio_num_t pinSDA, gpio_num_t pinSCL, uint32_t freq = 400000UL)
+        esp_err_t driver_init(driver_i2c_port_e _port)
         {
             if (_initialized)
             {
-                return;
+                return ESP_OK;
             }
             port = _port;
-            
-            __meta_i2c[static_cast<size_t>(port)].set_state(driver_state_t::initialized);
          
-            if (!freq)
+            auto cfg = __info_i2c[static_cast<size_t>(port)].get_cfg();
+            auto freq = cfg.frequency;
+            
+            if (!cfg.frequency)
             {
                 freq = 400000UL;
             }
             i2c_config_t conf = {};
             conf.mode = I2C_MODE_MASTER;
-            conf.scl_io_num = pinSCL;
-            conf.sda_io_num = pinSDA;
+            conf.scl_io_num = cfg.i2c_scl;
+            conf.sda_io_num = cfg.i2c_sda;
             conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
             conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
             conf.master.clk_speed = freq;
             conf.clk_flags = I2C_SCLK_SRC_FLAG_FOR_NOMAL;
 
-            auto ret = i2c_param_config(static_cast<i2c_port_t>(port), &conf);
+            esp_err_t ret = i2c_param_config(static_cast<i2c_port_t>(port), &conf);
             if (ret != ESP_OK)
             {
                 __set_err(1);
-                return;
+                return ret;
             }
 
             // @param slv_rx_buf_len Receiving buffer size. Only slave mode will use this value, it is ignored in master mode.
@@ -62,17 +66,19 @@ namespace __u_drivers
             if (ret != ESP_OK)
             {
                 __set_err(2);
-                return;
+                return ret;
             }
             ret = i2c_set_timeout(static_cast<i2c_port_t>(port), 0XFFFF);
             if (ret != ESP_OK)
             {
                 __set_err(3);
-                return;
+                return ret;
             }
 
-            __meta_i2c[static_cast<size_t>(port)].set_state(driver_state_t::started);
+            __info_i2c[static_cast<size_t>(port)].set_state(driver_state_t::initialized);
+            __info_i2c[static_cast<size_t>(port)].set_state(driver_state_t::started);
             _initialized = true;
+            return ret;
         }
 
         void driver_deinit()
@@ -82,8 +88,8 @@ namespace __u_drivers
                 return;
             }
 
-            __meta_i2c[static_cast<size_t>(port)].set_state(driver_state_t::initialized, true);
-            __meta_i2c[static_cast<size_t>(port)].set_state(driver_state_t::started, true);
+            __info_i2c[static_cast<size_t>(port)].set_state(driver_state_t::initialized, true);
+            __info_i2c[static_cast<size_t>(port)].set_state(driver_state_t::started, true);
             esp_err_t ret = i2c_driver_delete(static_cast<i2c_port_t>(port));
 
             // never happen because of static declaration
@@ -162,7 +168,7 @@ namespace __u_drivers
 
         void __set_err(uint8_t code)
         {
-            __meta_i2c[static_cast<size_t>(port)].inc_error(code);
+            __info_i2c[static_cast<size_t>(port)].inc_error(code);
         }
 
     };

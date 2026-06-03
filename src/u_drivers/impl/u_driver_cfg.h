@@ -9,7 +9,7 @@
 #include "soc/gpio_num.h"
 
 #ifndef U_UART_DRIVERS_CNT
-#   define U_UART_DRIVERS_CNT 1
+#   define U_UART_DRIVERS_CNT 2
 #else 
 #   if U_UART_DRIVERS_CNT > 3
 #       error "esp support only 3 uart"
@@ -41,8 +41,9 @@ namespace __u_drivers
         uint8_t user_count = 0;
     };
 
-    // Шаблонный класс для метаданных драйвера
-    class driver_meta_registry
+
+    template<typename cfg_t>
+    class driver_info_t
     {
     public:
         using error_callback_t = void (*)(const driver_meta_t &); // call callback with meta data
@@ -51,8 +52,25 @@ namespace __u_drivers
         driver_meta_t _meta = {};
         mutable ufo::mutex_t _mutex; 
         error_callback_t _clb = nullptr;
-
+        cfg_t _cfg;
+        const char* _dtag = nullptr;
+        
     public:
+        driver_info_t(){}
+        driver_info_t(const cfg_t& cfg) : _cfg(cfg) {}
+
+        void set_cfg(const cfg_t& cfg)
+        {
+            ufo::lock_guard<lock_t> lock(_mutex);
+            _cfg = cfg;
+        }
+
+        cfg_t get_cfg() const
+        {
+            ufo::lock_guard<lock_t> lock(_mutex);
+            return _cfg;
+        }
+
         void set_state(driver_state_t state, bool togle = false)
         {
             ufo::lock_guard<lock_t> lock(_mutex);
@@ -75,6 +93,12 @@ namespace __u_drivers
             {
                 _clb(_meta);
             }
+        }
+
+        uint8_t get_user_cnt() const
+        {
+            ufo::lock_guard<lock_t> lock(_mutex);
+            return _meta.user_count;
         }
 
         void inc_user()

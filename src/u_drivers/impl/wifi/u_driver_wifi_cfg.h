@@ -31,7 +31,7 @@ namespace __u_drivers
     };
 
     // for driver state tracing 
-    static driver_meta_registry __meta_wifi = {};
+    static driver_info_t __meta_wifi = {};
 
     // for auto config from .ini files and driver tracing
     static driver_wifi_cnf_t __cfg_wifi = {};

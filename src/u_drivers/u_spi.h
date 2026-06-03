@@ -13,12 +13,12 @@ namespace ufo
 
     auto get_spi_driver_cfg(u_spi_port_e port = u_spi_port_e::SPI1_HOST)
     {
-        u_spi_cfg_t cfg = __u_drivers::__cfg_spi[static_cast<size_t>(port)];
+        u_spi_cfg_t cfg = __u_drivers::__info_spi[static_cast<size_t>(port)].get_cfg();
         return cfg;
     }
 
     auto get_spi_driver_meta(u_spi_port_e port = u_spi_port_e::SPI1_HOST) {
-        u_spi_meta_t meta = __u_drivers::__meta_spi[static_cast<size_t>(port)].get_meta();
+        u_spi_meta_t meta = __u_drivers::__info_spi[static_cast<size_t>(port)].get_meta();
         return meta;
     }
 

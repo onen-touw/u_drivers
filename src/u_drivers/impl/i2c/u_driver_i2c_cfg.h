@@ -27,7 +27,11 @@ namespace __u_drivers
    };
 
    
-   static driver_meta_registry __meta_i2c[U_I2C_DRIVERS_CNT] = {};
-   static  driver_i2c_cnf_t __cfg_i2c[U_I2C_DRIVERS_CNT] = {};
+   // static driver_info_t __meta_i2c[U_I2C_DRIVERS_CNT] = {};
+   // static  driver_i2c_cnf_t __cfg_i2c[U_I2C_DRIVERS_CNT] = {};
+
+   // use default config that coded in driver_i2c_cnf_t as default structure initialization
+   static driver_info_t<driver_i2c_cnf_t> __info_i2c[U_I2C_DRIVERS_CNT] = {driver_i2c_cnf_t{}};
+
 
 } // namespace __u_drivers
