@@ -9,6 +9,7 @@ namespace __u_drivers
     {
     public:
         using uart_bind_t = u_uart_port_t;
+        using msg_t = twai_message_t;
         static constexpr const char* tag = "dtwai";
 
     private:
@@ -122,6 +123,87 @@ namespace __u_drivers
             __info_twai.dec_user();
             __info_twai.set_state(driver_state_t::initialized, true);
             __info_twai.set_state(driver_state_t::started, true);
+            return err;
+        }
+
+        esp_err_t dwrite(msg_t &msg, uint32_t ttw = 500, size_t recovery_retry)
+        {
+            esp_err_t err = twai_transmit(&msg, ttw);
+            if (err != ESP_OK)
+            {
+                if (recovery_retry && err == ESP_ERR_INVALID_STATE)
+                {
+                    return drecover(recovery_retry);
+                }
+            }
+            return err;
+        }
+
+        esp_err_t drecover(size_t retry_cnt)
+        {
+            auto err = twai_initiate_recovery();
+            if (err != ESP_OK)
+            {
+                __set_err(10);
+                return err;
+            }
+            
+            twai_status_info_t info;
+
+            while (retry_cnt--)
+            {
+                err = twai_get_status_info(&info);
+
+                if (err != ESP_OK)
+                {
+                    __set_err(11);
+                    return err;
+                }
+                if (info.state == TWAI_STATE_STOPPED)
+                {
+                    return ESP_OK;
+                }
+                ufo::utl::sleep_for(100);
+            }
+
+            __set_err(12);
+            return ESP_FAIL;
+        }
+
+        esp_err_t dread(msg_t& msg, uint32_t ttw = 200)
+        {
+            esp_err_t err = ESP_OK;
+            err = twai_receive(&msg, ttw);
+            if (err != ESP_OK)
+            {
+                msg.data_length_code = 0;
+                if (err = ESP_ERR_TIMEOUT)
+                {
+                    return ESP_OK;
+                }
+                __set_err(20);
+                return ESP_FAIL;
+            }
+            return ESP_OK;
+        }
+
+        esp_err_t dflush_tx() 
+        {
+            auto err = twai_clear_transmit_queue();
+            if (err != ESP_OK)
+            {
+                __set_err(30);
+            }
+            return err;
+        }
+
+        esp_err_t dflush_rx()
+        {
+            auto err = twai_clear_receive_queue();
+            if (err != ESP_OK)
+            {
+                __set_err(31);
+            }
             return err;
         }
 

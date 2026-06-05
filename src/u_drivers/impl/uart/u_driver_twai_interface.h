@@ -39,11 +39,24 @@ namespace __u_drivers
             _driver.driver_deinit();
         }
 
-       // no changes of driver - fields => thread safe
-        esp_err_t write(msg_t &msg, uint32_t ttw = 200)
+        /// @brief write msg to CAN bus
+        /// @param msg twai-msg packet
+        /// @param ttw time to wait
+        /// @param recovery_retry cycles of auto-recovery if bus is in bus-off state. If 0 - auto-recovery is disabled
+        /// @return 
+        esp_err_t write(msg_t &msg, uint32_t ttw = 500, size_t recovery_retry = 5)
         {
-            esp_err_t err = twai_transmit(&msg, ttw); 
-            return err;
+            return _driver.dwrite(msg, ttw, recovery_retry);
+        }
+
+        esp_err_t flush_tx() 
+        {
+            return _driver.dflush_tx();
+        }
+
+        esp_err_t flush_rx()
+        {
+            return _driver.dflush_rx();
         }
 
         twai_status_info_t get_info() const {
@@ -52,67 +65,10 @@ namespace __u_drivers
             return info;
         } 
 
-        uint32_t pkt_cnt() const {
-            return get_info().msgs_to_tx;
-        }
+        esp_err_t read(msg_t& msg, uint32_t ttw = 200){
 
-        msg_t read(uint32_t ttw = 200){
-            esp_err_t err = ESP_OK;
-            // esp_err_t err = twai_get_status_info(&_info);
-            // if (_info.msgs_to_rx < 1 || err != ESP_OK)
-            // {
-            //     _rcv.data_length_code = 0;
-            //     return _rcv;
-            // }
-            msg_t msg;
-            err = twai_receive(&msg, ttw);
-            if (err != ESP_OK)
-            {
-                // printf("twai_receive err\n\t");
-                // switch (err)
-                // {
-                // case ESP_ERR_TIMEOUT:
-                // printf("ESP_ERR_TIMEOUT\n");
-                //     break;
-                // case ESP_ERR_INVALID_ARG:
-                // printf("ESP_ERR_INVALID_ARG\n");
-                //     break;
-                // case ESP_ERR_INVALID_STATE:
-                // printf("ESP_ERR_INVALID_STATE\n");
-                //     break;                        
-                // default:
-                //     break;
-                // }
-                msg.data_length_code = 0;
-                return msg;
-            }
-            return msg;
+            return _driver.dread(msg, ttw);
         }
-
-        bool recover()
-        {
-            twai_status_info_t info;
-            if (twai_get_status_info(&info) != ESP_OK)
-            {
-                return false;
-            }
-            switch (info.state)
-            {
-            case TWAI_STATE_BUS_OFF:
-                twai_initiate_recovery();
-                break;
-            case TWAI_STATE_RECOVERING:
-            case TWAI_STATE_STOPPED:
-                // warning
-                break;
-            default:
-                // CEr
-                return false;
-                break;
-            }
-            return true;
-        }
-        
     };
 
 } // __u_drivers
