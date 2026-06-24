@@ -147,6 +147,7 @@ namespace __u_drivers
             {
                 return;
             }
+            _initialized = false;
             ESP_LOGI(tag, "(%u)[deinit]", static_cast<size_t>(_unum));
 
             __uninstall();
@@ -190,6 +191,17 @@ namespace __u_drivers
                 av = 0;
             }
             return av;
+        }
+
+        size_t write(const uint8_t *data, size_t len) const
+        {
+            if (!len)
+            {
+                return 0;
+            }
+            size_t l = uart_write_bytes(_unum, data, len);
+            uart_wait_tx_done(_unum, (TickType_t)100);
+            return l;
         }
 
         size_t write(const char *data, size_t len) const

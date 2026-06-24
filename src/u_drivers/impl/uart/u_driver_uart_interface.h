@@ -56,6 +56,13 @@ namespace __u_drivers
             return l;
         }
 
+        size_t write(const uint8_t *data, size_t len)
+        {
+            auto l = _driver.write(data, len);
+            return l;
+        }
+
+
         // write with serial-break (see protocol)
         size_t writeb(const char *data, size_t len)
         {

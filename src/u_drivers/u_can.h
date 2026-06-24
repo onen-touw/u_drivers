@@ -15,7 +15,7 @@ namespace ufo
         return cfg;
     }
 
-    auto get_uart_driver_meta() {
+    auto get_can_driver_meta() {
         u_can_meta_t meta = __u_drivers::__info_twai.get_meta();
         return meta;
     }

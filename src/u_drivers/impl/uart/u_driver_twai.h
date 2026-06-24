@@ -50,7 +50,7 @@ namespace __u_drivers
             gpio_reset_pin(ubind_cfg.rx);
             gpio_reset_pin(ubind_cfg.tx);
 
-            twai_general_config_t general;
+            twai_general_config_t general = {};
             general.controller_id = 0;       /**< TWAI controller ID, index from 0.
             //                     If you want to install TWAI driver with a non-zero controller_id,
             //                     please use `twai_driver_install_v2` */
@@ -105,6 +105,7 @@ namespace __u_drivers
             }
             esp_err_t err = ESP_OK;
 
+            ESP_LOGI(tag, "[deinit]: start");
             // checks
             err = twai_stop();
             if (err != ESP_OK)
@@ -123,10 +124,13 @@ namespace __u_drivers
             __info_twai.dec_user();
             __info_twai.set_state(driver_state_t::initialized, true);
             __info_twai.set_state(driver_state_t::started, true);
+
+            ESP_LOGI(tag, "[deinit]: done");
+            
             return err;
         }
 
-        esp_err_t dwrite(msg_t &msg, uint32_t ttw = 500, size_t recovery_retry)
+        esp_err_t dwrite(msg_t &msg, uint32_t ttw, size_t recovery_retry)
         {
             esp_err_t err = twai_transmit(&msg, ttw);
             if (err != ESP_OK)
@@ -134,11 +138,11 @@ namespace __u_drivers
                 if (recovery_retry && err == ESP_ERR_INVALID_STATE)
                 {
                     return drecover(recovery_retry);
-                }
+                }       
             }
             return err;
         }
-
+        
         esp_err_t drecover(size_t retry_cnt)
         {
             auto err = twai_initiate_recovery();
@@ -161,7 +165,12 @@ namespace __u_drivers
                 }
                 if (info.state == TWAI_STATE_STOPPED)
                 {
-                    return ESP_OK;
+                    err = twai_start();
+                    if (err != ESP_OK)                    
+                    {
+                        __set_err(13);      
+                    }
+                    return err;
                 }
                 ufo::utl::sleep_for(100);
             }
@@ -170,16 +179,15 @@ namespace __u_drivers
             return ESP_FAIL;
         }
 
-        esp_err_t dread(msg_t& msg, uint32_t ttw = 200)
+        esp_err_t dread(msg_t& msg, uint32_t ttw)
         {
-            esp_err_t err = ESP_OK;
-            err = twai_receive(&msg, ttw);
+            esp_err_t err = twai_receive(&msg, ttw);
             if (err != ESP_OK)
             {
                 msg.data_length_code = 0;
-                if (err = ESP_ERR_TIMEOUT)
+                if (err == ESP_ERR_TIMEOUT)
                 {
-                    return ESP_OK;
+                    return err;
                 }
                 __set_err(20);
                 return ESP_FAIL;
