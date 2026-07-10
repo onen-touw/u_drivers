@@ -28,8 +28,13 @@ namespace __u_drivers
     static driver_info_t<driver_uart_cnf_t> __info_uart[U_UART_DRIVERS_CNT] = 
     {
             driver_uart_cnf_t{.tx = gpio_num_t::GPIO_NUM_1, .rx = gpio_num_t::GPIO_NUM_3, .baudrate = 115200}
-#if U_UART_DRIVERS_CNT > 1
+
+#if U_UART_DRIVERS_CNT > 1          /// default initialization
            , driver_uart_cnf_t{.tx = gpio_num_t::GPIO_NUM_16, .rx = gpio_num_t::GPIO_NUM_17, .baudrate = 115200} 
+#endif
+
+#if U_UART_DRIVERS_CNT > 2          /// default initialization
+           , driver_uart_cnf_t{.tx = gpio_num_t::GPIO_NUM_18, .rx = gpio_num_t::GPIO_NUM_19, .baudrate = 115200} 
 #endif
     };
 

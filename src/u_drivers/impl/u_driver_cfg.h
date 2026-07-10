@@ -9,7 +9,7 @@
 #include "soc/gpio_num.h"
 
 #ifndef U_UART_DRIVERS_CNT
-#   define U_UART_DRIVERS_CNT 2
+#   define U_UART_DRIVERS_CNT 3
 #else 
 #   if U_UART_DRIVERS_CNT > 3
 #       error "esp support only 3 uart"

@@ -269,6 +269,10 @@ namespace __u_drivers
 #if U_UART_DRIVERS_CNT > 1
         ,u_driver_uart_t(u_uart_port_t::uart1)
 #endif
+
+#if U_UART_DRIVERS_CNT > 2
+        ,u_driver_uart_t(u_uart_port_t::uart2)
+#endif
     };
 
 

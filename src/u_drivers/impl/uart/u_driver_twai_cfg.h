@@ -5,8 +5,6 @@
 #include "u_driver_uart_cfg.h"
 #include "esp_log.h"
 
-#define U_UART_DRIVERS_CNT 2
-
 namespace __u_drivers
 {
 #if U_UART_DRIVERS_CNT > 1
